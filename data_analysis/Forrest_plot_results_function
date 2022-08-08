@@ -1,0 +1,209 @@
+
+### create forrest plot including the results for the single imputation and multiple imputation models and the list-wise deletion model.
+
+create_forrest_plot <- function(calc_outcomes,measurement, graph_title){
+  ## function to create a Forrest plot ##
+  ### calc_outcomes: list containing the outcome values for each condition
+  ### measurement: the outcome value to be plotted in the Forrest plot which is either the confidence or prediction interval coverage.
+  
+  
+  # create lists to store the values
+  outcomes <- list()
+  upper <- list()
+  lower <- list()
+  studies <- list() 
+  
+  # add the values to the lists
+  for(i in 1 : length(calc_outcomes)){
+    outcomes[[i]] <- c(mean(calc_outcomes[[i]][["si"]][[measurement]]), mean(calc_outcomes[[i]][["mi"]][[measurement]]), mean(calc_outcomes[[i]][["ld"]][[measurement]]))
+    upper[[i]] <- c(max(calc_outcomes[[i]][["si"]][[measurement]]),max(calc_outcomes[[i]][["mi"]][[measurement]]), max(calc_outcomes[[i]][["ld"]][[measurement]]))
+    lower[[i]] <- c(min(calc_outcomes[[i]][["si"]][[measurement]]), min(calc_outcomes[[i]][["mi"]][[measurement]]), min(calc_outcomes[[i]][["ld"]][[measurement]]))
+    studies[[i]] <- paste0(calc_outcomes[[i]][["conds"]][["missingtype"]],"_", calc_outcomes[[i]][["conds"]][["impmethod"]])
+    
+  }
+  # aggregrate the outcome selection
+  outcomes <- do.call("rbind", outcomes)
+  upper <- do.call("rbind", upper)
+  lower <- do.call("rbind", lower)
+  studies <- do.call("rbind", studies)
+  
+  # create df of the aggregrates 
+  df1 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,1],
+                    lwr = lower[,1],
+                    upr = upper[,1])
+  df1$model <- "si"
+  
+  df2 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,2],
+                    lwr = lower[,2],
+                    upr = upper[,2])
+  df2$model <- "mi"
+  
+  df3 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,3],
+                    lwr = lower[,3],
+                    upr = upper[,3])
+  df3$model <- "ld"
+  
+  # bind the df's 
+  df <- rbind(df1, df2)
+  df <- rbind(df,df3)
+  
+ ## plot the results
+  ggplot(df, aes(x=index, y=avg_outcome, ymin=lwr, ymax=upr,col= model,fill=model)) + 
+    geom_pointrange(position = position_dodge(width = 0.8)) +
+    coord_flip() +
+    geom_hline(yintercept=0.95, lty=3) +
+    scale_x_continuous(breaks=1:nrow(df), labels=df$study) +
+    labs(title= graph_title, x= "Condition", y = measurement)
+  
+}
+
+create_forrest_plot(calc_outcomes = res,measurement = "cic", graph_title = "test with R2 of 0.1")
+
+
+### function to create a Forrest plot for all the models; complete data set, single imputation and multiple imputation models, list-wise deletion.  ###
+
+create_forrest_plot_all <- function(calc_outcomes,measurement, graph_title, lwr, upr){
+  ## function to create a forrest plot##
+  ### calc_outcomes: list containing the outcome values for each condition
+  ### measurement: the outcome value to be plotted in the Forrest plot which is either the confidence or prediction interval coverage.
+  
+  # create lists to store the values
+  outcomes <- list()
+  upper <- list()
+  lower <- list()
+  studies <- list() 
+  
+  # add the values to the lists
+  for(i in 1 : length(calc_outcomes)){
+    outcomes[[i]] <- c(mean(calc_outcomes[[i]][["si"]][[measurement]]), mean(calc_outcomes[[i]][["mi"]][[measurement]]), mean(calc_outcomes[[i]][["ld"]][[measurement]]),mean(calc_outcomes[[i]][["comp"]][[measurement]]))
+    upper[[i]] <- c(max(calc_outcomes[[i]][["si"]][[measurement]]),max(calc_outcomes[[i]][["mi"]][[measurement]]), max(calc_outcomes[[i]][["ld"]][[measurement]]),max(calc_outcomes[[i]][["comp"]][[measurement]]))
+    lower[[i]] <- c(min(calc_outcomes[[i]][["si"]][[measurement]]), min(calc_outcomes[[i]][["mi"]][[measurement]]), min(calc_outcomes[[i]][["ld"]][[measurement]]),min(calc_outcomes[[i]][["comp"]][[measurement]]))
+    studies[[i]] <- paste0(calc_outcomes[[i]][["conds"]][["missingtype"]],"_", calc_outcomes[[i]][["conds"]][["impmethod"]])
+    
+  }
+  # aggregrate the outcome selection
+  outcomes <- do.call("rbind", outcomes)
+  upper <- do.call("rbind", upper)
+  lower <- do.call("rbind", lower)
+  studies <- do.call("rbind", studies)
+  
+  # create df of the aggregrates 
+  df1 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,1],
+                    lwr = lower[,1],
+                    upr = upper[,1])
+  df1$model <- "SI"
+  
+  df2 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,2],
+                    lwr = lower[,2],
+                    upr = upper[,2])
+  df2$model <- "MI"
+  
+  df3 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,3],
+                    lwr = lower[,3],
+                    upr = upper[,3])
+  df3$model <- "LD"
+  
+  df4 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,4],
+                    lwr = lower[,4],
+                    upr = upper[,4])
+  df4$model <- "Complete"
+  
+  # bind the df's 
+  df <- rbind(df1, df2)
+  df <- rbind(df,df3)
+  df <- rbind(df,df4)
+  
+
+  ## plot the results
+  ggplot(df, aes(x=index, y=avg_outcome, ymin=lwr, ymax=upr,col= model,fill=model)) + 
+    geom_pointrange(position = position_dodge(width = 0.7)) +
+    coord_flip() +
+    geom_hline(yintercept=0.95, lty=3) +
+    scale_x_continuous(breaks=1:nrow(df), labels=df$study) +
+    scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75,1), limits = c(lwr,upr)) +
+    labs(title= graph_title, x= "Condition", y = measurement)
+  
+}
+
+create_forrest_plot_all(calc_outcomes = res,measurement = "pic", graph_title = "PI coverage for R2 of 0.3", lwr = 0.75, upr = 1)
+
+
+## Create a forrest plot including the results for single and multiple imputation models and the complete dataset
+create_forrest_plot_without_ld <- function(calc_outcomes,measurement, graph_title){
+  ## function to create a forrest plot##
+  ### calc_outcomes: list containing the outcome values for each condition
+  ### measurement: the outcome value to be plotted in the Forrest plot which is either the confidence or prediction interval coverage.
+  
+  
+  # create lists to store the values
+  outcomes <- list()
+  upper <- list()
+  lower <- list()
+  studies <- list()
+  
+  # add the values to the lists
+  for(i in 1 : length(calc_outcomes)){
+    outcomes[[i]] <- c(mean(calc_outcomes[[i]][["si"]][[measurement]]), mean(calc_outcomes[[i]][["mi"]][[measurement]]), mean(calc_outcomes[[i]][["comp"]][[measurement]]))
+    upper[[i]] <- c(max(calc_outcomes[[i]][["si"]][[measurement]]),max(calc_outcomes[[i]][["mi"]][[measurement]]), max(calc_outcomes[[i]][["comp"]][[measurement]]))
+    lower[[i]] <- c(min(calc_outcomes[[i]][["si"]][[measurement]]), min(calc_outcomes[[i]][["mi"]][[measurement]]), min(calc_outcomes[[i]][["comp"]][[measurement]]))
+    studies[[i]] <- paste0(calc_outcomes[[i]][["conds"]][["missingtype"]],"_", calc_outcomes[[i]][["conds"]][["impmethod"]])
+    
+  }
+  # aggregrate the outcome selection
+  outcomes <- do.call("rbind", outcomes)
+  upper <- do.call("rbind", upper)
+  lower <- do.call("rbind", lower)
+  studies <- do.call("rbind", studies)
+  
+  # create df of the aggregrates 
+  df1 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,1],
+                    lwr = lower[,1],
+                    upr = upper[,1])
+  df1$model <- "si"
+  
+  df2 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,2],
+                    lwr = lower[,2],
+                    upr = upper[,2])
+  df2$model <- "mi"
+  
+  df3 <- data.frame(study = studies,
+                    index = 1:length(calc_outcomes),
+                    avg_outcome = outcomes[,3],
+                    lwr = lower[,3],
+                    upr = upper[,3])
+  df3$model <- "comp"
+  
+  # bind the df's 
+  df <- rbind(df1, df2)
+  df <- rbind(df,df3)
+  
+  ## plot the results
+  ggplot(df, aes(x=index, y=avg_outcome, ymin=lwr, ymax=upr,col= model,fill=model)) + 
+    geom_pointrange(position = position_dodge(width = 0.8)) +
+    coord_flip() +
+    geom_hline(yintercept=0.95, lty=3) +
+    scale_x_continuous(breaks=1:nrow(df), labels=df$study) +
+    scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 0.95, 1)) +
+    labs(title= graph_title, x= "Condition", y = measurement)
+  
+}
+
+create_forrest_plot_without_ld(calc_outcomes = res,measurement = "cic", graph_title = "test with R2 of 0.1")
